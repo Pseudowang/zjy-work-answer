@@ -136,31 +136,42 @@ def study_record(session, info, class_id):
         time.sleep(sleep_randint)
 
 
-def start(session, jump_content):
+def start(session, jump_content, watch_content):
     separator = "*" * 40
     logger.info(separator)
     logger.info(f"运行信息")
     logger.info(separator)
     logger.info(f"* 跳过课程: {jump_content if jump_content is not None else ''}")
+    logger.info(f"* 只刷课程: {watch_content if watch_content is not None else ''}")
     logger.info(separator)
     logger.info("开始执行")
     logger.info(separator)
+
     course = get_learnning_course_list(session)
 
-    jump_list = []
-    if jump_content is not None and '#' in jump_content:
-        jump_list = jump_content.split('#')[1:]
+    # 解析跳过和只刷的课程关键字
+    jump_list = jump_content.split('#')[1:] if jump_content else []
+    watch_list = watch_content.split('#')[1:] if watch_content else []
 
     logging.info("--------------------------------【加载课程】---------------------------")
     for i in course['rows']:
         logging.info("【%s%%】《%s》- %s %s", i['studySpeed'], i['courseName'], i['presidingTeacher'], i['termName'])
     logging.info("--------------------------------【加载完成】---------------------------")
     time.sleep(random.uniform(1, 1.5))
+
     for i in course['rows']:
         logging.info("进入课程：【%s】", i['courseName'])
-        if any(s in i['courseName'] for s in jump_list):
-            logger.info("\t匹配到过滤条件: %s - 跳过", i['courseName'])
+
+        # 跳过逻辑
+        if jump_list and any(s in i['courseName'] for s in jump_list):
+            logger.info("\t匹配到跳过条件: %s - 跳过", i['courseName'])
             continue
+
+        # 只刷逻辑
+        if watch_list and not any(s in i['courseName'] for s in watch_list):
+            logger.info("\t未匹配到只刷条件: %s - 跳过", i['courseName'])
+            continue
+
         time.sleep(random.uniform(1, 1.5))
         # 一级目录
         moduleList1 = get_process_list(session, i['courseId'], i['classId'], 0, 1)
@@ -174,38 +185,31 @@ def start(session, jump_content):
             # 二级目录
             moduleList2 = get_process_list(session, i['courseId'], i['classId'], j['id'], 2)
             for k in moduleList2:
-                # time.sleep(random.uniform(0.5, 1))
                 logging.info("\t\t%s", k['name'])
                 # 三级目录
                 moduleList3 = get_process_list(session, i['courseId'], i['classId'], k['id'], 3)
                 for m in moduleList3:
-                    # time.sleep(random.uniform(0.5, 1))
                     if m['speed'] == 100:
                         logging.info("\t\t\t%s 课程已刷进度 100", m['name'])
                         continue
                     logging.info("\t\t\t\t%s", m['name'])
                     # 如果只有三级目录
                     if not m.get('children') or not len(m.get('children', [])):
-                        # 如果课程完成-不刷课
                         if m['speed'] == 100:
                             logging.info("\t\t\t\t\t%s 课程已刷进度 100%", m['name'])
                             continue
-                        # 将信息拿去刷课
                         try:
                             study_record(session, m, i['classId'])
                         except Exception as e:
                             logging.error("错误跳过: %s", e)
-                            # 四级目录(最终)
                     else:
                         for n in m.get('children', []):
-                            # time.sleep(random.uniform(1, 1.5))
-                            # 如果课程完成-不刷课
                             if n['speed'] == 100:
                                 logging.info("\t\t\t\t\t%s 课程已刷进度 100", n['name'])
                                 continue
-                            # 将信息拿去刷课
-
                             try:
                                 study_record(session, n, i['classId'])
                             except Exception as e:
                                 logging.error("错误跳过: %s", e)
+
+

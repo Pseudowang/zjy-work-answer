@@ -37,12 +37,20 @@ if jump == 1:
     print(
         '\t请输入跳过课程名(模糊匹配), 例如\n\t\t输入多个文本随机井号后面的: #设计#思想道德#技术\n\t\t输入单个将固定跳过一个课程: #思想')
     jump_content = input('请输入需要跳过的课程关键字(#电商): ') or ''
+
+# 只刷课程
+watch = int(input('是否有需要单独刷的课程 1.是 or 2.否: ') or 2)
+watch_content = None
+if watch == 1:
+    print(
+        '\t请输入只刷的课程名(模糊匹配), 例如\n\t\t输入多个文本随机井号后面的: #设计#思想道德#技术\n\t\t输入单个将固定只刷一个课程: #思想')
+    watch_content = input('请输入需要只刷的课程关键字(#技术): ') or ''
 # ****************************************** 结束 ******************************************
 
 if __name__ == '__main__':
     try:
         session = mooc_init.login(username, password)
-        mook_video.start(session, jump_content=jump_content)
+        mook_video.start(session, jump_content=jump_content, watch_content=watch_content)
     except Exception as e:
         logging.exception('运行异常', e)
         input("程序结束，如遇错误请重新运行，多次重复错误请提交Github...")
